@@ -99,7 +99,7 @@ class Archiver:
 
     def get_hash(self, format_cfg, path):
         algorithm = format_cfg['hash-algorithm']
-        length = format_cfg['hash-length']
+        length = int(format_cfg['hash-length'])
         if algorithm == 'md5':
             digest = hashlib.md5
         elif algorithm == 'sha1':
@@ -115,4 +115,4 @@ class Archiver:
         else:
             raise ValueError('Invalid algorithm: %r' % algorithm)
         with open(path, 'rb') as f:
-            return encode_hash(hash_file(digest(), f), length)
+            return encode_hash(hash_file(digest(), f), length).decode()
