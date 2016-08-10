@@ -78,6 +78,11 @@ def config_logging(opts, cfg):
         cfg.write(tmp)
         tmp.seek(0)
         logging.config.fileConfig(tmp, disable_existing_loggers=False)
+    else:
+        logging.basicConfig(
+            level=logging.WARNING,
+            format='%(levelname)s %(name)s - %(message)s',
+        )
     if hasattr(logging, 'captureWarnings'):
         logging.captureWarnings(True)
 

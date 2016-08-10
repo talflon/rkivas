@@ -15,4 +15,7 @@ setup(
         'pytest>=2.6.1,<3',
         'hypothesis>=2.0,<4',
     ],
+    scripts=[
+        'scripts/rkivas',
+    ],
 )
