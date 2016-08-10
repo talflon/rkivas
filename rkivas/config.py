@@ -38,6 +38,11 @@ hash-length = 16
 
 [extension-map]
 jpeg = jpg
+tiff = tif
+
+[extension-handlers]
+jpg = exif
+tif = exif
 """
 
 

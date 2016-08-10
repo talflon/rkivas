@@ -19,6 +19,13 @@ import os
 import os.path
 import shutil
 from base64 import b32encode
+from datetime import datetime
+
+import exifread
+
+
+EXIF_TAG = 'Image DateTime'
+EXIF_FORMAT = '%Y:%m:%s %H:%M:%S'
 
 
 def hash_file(digest, fp, buffer_size=4096):
@@ -73,7 +80,22 @@ class Archiver:
             shutil.copy2(path, out_path)
 
     def get_timestamp(self, ext, path):
-        return None
+        try:
+            handler_name = self.cfg['extension-handlers'][ext]
+        except KeyError:
+            return None
+        return getattr(self, 'get_timestamp_' + handler_name)(path)
+
+    def get_timestamp_exif(self, path):
+        try:
+            with open(path) as f:
+                timestamp_str = exifread.process_file(f, stop_tag=EXIF_TAG)[EXIF_TAG].values
+        except KeyError:
+            return None
+        try:
+            return datetime.strptime(timestamp_str, EXIF_FORMAT)
+        except ValueError:
+            return None
 
     def get_hash(self, format_cfg, path):
         algorithm = format_cfg['hash-algorithm']

@@ -7,6 +7,7 @@ setup(
     packages=find_packages(exclude=['tests', 'env']),
     test_suite='tests',
     install_requires=[
+        'ExifRead>=1.4,<3',
     ],
     setup_requires=[
         'pytest-runner>=2.0,<3',
