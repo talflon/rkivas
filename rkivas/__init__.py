@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import hashlib
+import logging
 import os
 import os.path
 import shutil
@@ -24,8 +25,9 @@ from datetime import datetime
 import exifread
 
 
-EXIF_TAG = 'Image DateTime'
-EXIF_FORMAT = '%Y:%m:%s %H:%M:%S'
+EXIF_FORMAT = '%Y:%m:%d %H:%M:%S'
+
+log = logging.getLogger('rkivas')
 
 
 def hash_file(digest, fp, buffer_size=4096):
@@ -52,12 +54,17 @@ class Archiver:
 
     def archive_all(self):
         for dir, source in self.cfg['sources'].items():
-            for path in os.listdir(dir):
+            log.debug('Searching ' + dir)
+            for filename in os.listdir(dir):
+                path = os.path.join(dir, filename)
                 if os.path.isfile(path):
                     self.archive_file(source, path)
+                else:
+                    log.debug('Skipping non-file ' + path)
 
     def archive_file(self, source, path):
         ext = self.get_ext(path)
+        log.debug('Found file ' + path + ' of type ' + ext)
         timestamp = self.get_timestamp(ext, path)
         if timestamp is not None:
             format_cfg = self.cfg['backup']
@@ -74,10 +81,14 @@ class Archiver:
 
     def copy_to(self, path, out_path):
         if not os.path.lexists(out_path):
-            dir = os.path.split(out_path)
+            log.debug('Copying ' + path + ' to ' + out_path)
+            dir = os.path.split(out_path)[0]
             if not os.path.isdir(dir):
                 os.makedirs(dir)
             shutil.copy2(path, out_path)
+        else:
+            log.debug('Not copying ' + path + ' to ' + out_path +
+                      ' because destination already exists')
 
     def get_timestamp(self, ext, path):
         try:
@@ -88,13 +99,15 @@ class Archiver:
 
     def get_timestamp_exif(self, path):
         try:
-            with open(path) as f:
-                timestamp_str = exifread.process_file(f, stop_tag=EXIF_TAG)[EXIF_TAG].values
-        except KeyError:
+            with open(path, 'rb') as f:
+                timestamp_str = exifread.process_file(f, stop_tag='DateTimeOriginal')['EXIF DateTimeOriginal'].values
+        except Exception:
+            log.error('Error getting EXIF info', exc_info=True)
             return None
         try:
             return datetime.strptime(timestamp_str, EXIF_FORMAT)
         except ValueError:
+            log.error('Invalid EXIF datetime: %r' % timestamp_str, exc_info=True)
             return None
 
     def get_hash(self, format_cfg, path):
