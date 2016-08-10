@@ -1,14 +1,10 @@
-import os.path
 import re
-from argparse import ArgumentParser
 from random import Random
-from unittest.mock import Mock
 
 import hypothesis.strategies as hs
 from hypothesis import given, assume
 
-import rkivas.config
-from rkivas import hash_file, encode_hash, Archiver
+from rkivas import hash_file, encode_hash
 
 
 @given(hs.lists(hs.binary(max_size=10, min_size=1), max_size=10))
@@ -73,48 +69,3 @@ class TestEncodeHash:
         hashed = [bytes(rand.randrange(256) for _ in range(10)) for _ in range(5)]
         results = [encode_hash(h, 4) for h in hashed]
         assert len(set(results)) == len(results)
-
-
-class TestArchiver:
-
-    def load_config(self, config_map, tmpdir):
-        config_filename = os.path.join(str(tmpdir), 'ini')
-        with open(config_filename, 'w') as config_file:
-            for header, body in config_map.items():
-                print('[' + header + ']', file=config_file)
-                for k, v in body.items():
-                    print('{} = {}'.format(k, v), file=config_file)
-        parser = ArgumentParser()
-        rkivas.config.add_default_opts(parser)
-        opts = parser.parse_args(['--config-file', config_filename])
-        return rkivas.config.load_config_files(opts)
-
-    def test_get_ext(self, tmpdir):
-        ext_map = {
-            'jpeg': 'jpg',
-            'htm': 'html',
-        }
-        cfg = self.load_config({'extension-map': ext_map}, tmpdir)
-        archiver = Archiver(cfg)
-        assert archiver.get_ext('a/b/c/whatever.png') == 'png'
-        assert archiver.get_ext('stuff.tar') == 'tar'
-        assert archiver.get_ext('blah.jpeg') == 'jpg'
-        assert archiver.get_ext('bleh.jpg') == 'jpg'
-        assert archiver.get_ext('jkl/x123.htm') == 'html'
-        assert archiver.get_ext('jkl/x123.html') == 'html'
-
-    def test_get_timestamp_ext_dispatch(self, tmpdir):
-        ext = 'blah'
-        handler_name = 'bleh'
-        path = 'any/thin.g'
-        result = 'yay'
-        cfg = self.load_config({
-            'extension-handlers': {
-                ext: handler_name,
-            },
-        }, tmpdir)
-        archiver = Archiver(cfg)
-        archiver.get_timestamp_bleh = Mock()
-        archiver.get_timestamp_bleh.return_value = result
-        assert archiver.get_timestamp(ext, path) == result
-        archiver.get_timestamp_bleh.assert_called_once_with(path)
