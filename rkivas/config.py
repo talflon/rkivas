@@ -66,6 +66,9 @@ def add_default_opts(parser):
     parser.add_argument(
         '--debug-config', action='store_true',
         help='instead of running, output the combined configuration')
+    parser.add_argument(
+        '--dry-run', action='store_true',
+        help="don't affect filesystem, just log what would have been done")
 
 
 def config_logging(opts, cfg):
@@ -104,6 +107,11 @@ def load_common_config(opts):
     cfg = load_config_files(opts)
     if not opts.debug_config:
         config_logging(opts, cfg)
+    load_opts_into_cfg(opts, cfg, {
+        'backup': {
+            'dry-run': 'dry_run',
+        }
+    })
     return cfg
 
 

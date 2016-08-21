@@ -82,10 +82,11 @@ class Archiver:
     def copy_to(self, path, out_path):
         if not os.path.lexists(out_path):
             log.debug('Copying ' + path + ' to ' + out_path)
-            dir = os.path.split(out_path)[0]
-            if not os.path.isdir(dir):
-                os.makedirs(dir)
-            shutil.copy2(path, out_path)
+            if not self.cfg['backup']['dry-run']:
+                dir = os.path.split(out_path)[0]
+                if not os.path.isdir(dir):
+                    os.makedirs(dir)
+                shutil.copy2(path, out_path)
         else:
             log.debug('Not copying ' + path + ' to ' + out_path +
                       ' because destination already exists')
