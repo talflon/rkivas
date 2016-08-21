@@ -111,7 +111,7 @@ class Archiver:
             return None
 
     def get_hash(self, format_cfg, path):
-        algorithm = format_cfg['hash-algorithm']
+        algorithm = format_cfg['hash-algorithm'].lower()
         length = int(format_cfg['hash-length'])
         if algorithm == 'md5':
             digest = hashlib.md5

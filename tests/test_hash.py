@@ -1,10 +1,15 @@
+import hashlib
+import os.path
 import re
 from random import Random
+from unittest.mock import Mock, patch
 
+import pytest
 import hypothesis.strategies as hs
 from hypothesis import given, assume
 
-from rkivas import hash_file, encode_hash
+import rkivas
+from rkivas import hash_file, encode_hash, Archiver
 
 
 @given(hs.lists(hs.binary(max_size=10, min_size=1), max_size=10))
@@ -69,3 +74,57 @@ class TestEncodeHash:
         hashed = [bytes(rand.randrange(256) for _ in range(10)) for _ in range(5)]
         results = [encode_hash(h, 4) for h in hashed]
         assert len(set(results)) == len(results)
+
+
+def check_get_hash(algorithm, digest, contents, tmpdir, length=7):
+    filename = os.path.join(str(tmpdir), 'file_to_hash')
+    with open(filename, 'wb') as f:
+        f.write(contents)
+    digest.update(contents)
+    expected = digest.digest()
+    with patch.object(rkivas, 'encode_hash') as mock_encode_hash:
+        mock_encode_hash.return_value = b'success'
+        result = Archiver({}).get_hash({
+            'hash-algorithm': algorithm,
+            'hash-length': str(length),
+        }, filename)
+        mock_encode_hash.assert_called_once_with(expected, length)
+        assert result == 'success'
+
+
+@pytest.mark.parametrize('algorithm', ['md5', 'MD5', 'Md5'])
+def test_get_hash_md5(tmpdir, algorithm):
+    check_get_hash(
+        algorithm=algorithm,
+        digest=hashlib.md5(),
+        contents='testing 1 2 3'.encode(),
+        tmpdir=tmpdir)
+
+
+@pytest.mark.parametrize('algorithm', ['sha1', 'SHA1', 'Sha1'])
+def test_get_hash_sha1(tmpdir, algorithm):
+    check_get_hash(
+        algorithm=algorithm,
+        digest=hashlib.sha1(),
+        contents='testing 1 2 3'.encode(),
+        tmpdir=tmpdir)
+
+
+@pytest.mark.parametrize('length,algorithm', [
+    (1, 'sha224'),
+    (44, 'sha224'),
+    (45, 'sha256'),
+    (51, 'sha256'),
+    (52, 'sha384'),
+    (76, 'sha384'),
+    (77, 'sha512'),
+    (102, 'sha512'),
+])
+def test_get_hash_sha2(tmpdir, length, algorithm):
+    for algorithm_name in 'sha2', 'SHA2', 'Sha2':
+        check_get_hash(
+            algorithm=algorithm_name,
+            length=length,
+            digest=getattr(hashlib, algorithm)(),
+            contents='testing 1 2 3'.encode(),
+            tmpdir=tmpdir)
