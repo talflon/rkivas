@@ -35,6 +35,21 @@ def test_get_ext(tmpdir):
     assert archiver.get_ext('jkl/x123.html') == 'html'
 
 
+def test_get_ext_different_case(tmpdir):
+    ext_map = {
+        'jpeg': 'jpg',
+        'htm': 'html',
+    }
+    cfg = load_config({'extension-map': ext_map}, tmpdir)
+    archiver = Archiver(cfg)
+    assert archiver.get_ext('a/b/c/whatever.PNG') == 'png'
+    assert archiver.get_ext('stuff.Tar') == 'tar'
+    assert archiver.get_ext('blah.Jpeg') == 'jpg'
+    assert archiver.get_ext('bleh.JPG') == 'jpg'
+    assert archiver.get_ext('jkl/x123.HTM') == 'html'
+    assert archiver.get_ext('jkl/x123.hTmL') == 'html'
+
+
 def test_get_timestamp_ext_dispatch(tmpdir):
     ext = 'blah'
     handler_name = 'bleh'

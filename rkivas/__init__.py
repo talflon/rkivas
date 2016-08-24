@@ -76,7 +76,7 @@ class Archiver:
         self.copy_to(path, out_path)
 
     def get_ext(self, path):
-        ext = os.path.splitext(path)[1][1:]
+        ext = os.path.splitext(path)[1][1:].lower()
         return self.cfg['extension-map'].get(ext, ext)
 
     def copy_to(self, path, out_path):
