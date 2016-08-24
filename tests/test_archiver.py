@@ -1,6 +1,7 @@
+import os
 import os.path
 from argparse import ArgumentParser
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import rkivas.config
 from rkivas import Archiver
@@ -49,3 +50,41 @@ def test_get_timestamp_ext_dispatch(tmpdir):
     archiver.get_timestamp_bleh.return_value = result
     assert archiver.get_timestamp(ext, path) == result
     archiver.get_timestamp_bleh.assert_called_once_with(path)
+
+
+def check_archive_all(files, sources, tmpdir):
+    source_map = {os.path.join(str(tmpdir), k): v for k, v in sources.items()}
+    expected_calls = []
+    for p, names in files.items():
+        dir = os.path.join(str(tmpdir), p)
+        os.mkdir(dir)
+        for n in names:
+            file_path = os.path.join(dir, n)
+            expected_calls.append(call(sources[p], file_path))
+            with open(file_path, 'w') as f:
+                f.write('stuff')
+    cfg = load_config({'sources': source_map}, tmpdir)
+    archiver = Archiver(cfg)
+    archiver.archive_file = Mock()
+    archiver.archive_all()
+    archiver.archive_file.assert_has_calls(expected_calls, any_order=True)
+
+
+def test_archive_all(tmpdir):
+    check_archive_all(files={
+        'path1': ['abc', 'def'],
+        'path2': ['a', 'b', 'c'],
+    }, sources={
+        'path1': 'source1',
+        'path2': 'source2',
+    }, tmpdir=tmpdir)
+
+
+def test_archive_all_mixed_cases(tmpdir):
+    check_archive_all(files={
+        'path1': ['abc', 'DEF'],
+        'Path2': ['a', 'B', 'c'],
+    }, sources={
+        'path1': 'Source1',
+        'Path2': 'source2',
+    }, tmpdir=tmpdir)

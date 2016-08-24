@@ -46,8 +46,14 @@ tif = exif
 """
 
 
+class ConfigParser(RawConfigParser):
+
+    def optionxform(self, optionstr):
+        return optionstr
+
+
 def load_config_files(opts):
-    cfg = RawConfigParser()
+    cfg = ConfigParser()
     cfg.read_file(StringIO(DEFAULTS))
     cfg.read(opts.config_file)
     return cfg
